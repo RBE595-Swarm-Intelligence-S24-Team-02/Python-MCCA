@@ -6,3 +6,5 @@ from scipy.spatial import KDTree
 from sympy import symbols, Eq, solve
 from typing import List 
 
+class Robot:
+    
