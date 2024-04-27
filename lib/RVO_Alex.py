@@ -30,11 +30,14 @@ CIRCLE_SPAWN_RADIUS = 200
 # MOST RECENT FILE TO COMBINE OUR WORK
 
 class Robot:
-    def __init__(self, radius, max_speed, spawn_location, goal_location, time_step, initial_velocity, id, color):
+    # def __init__(self, radius, max_speed, spawn_location, goal_location, time_step, initial_velocity, id, color):
+    def __init__(self, radius, shape, dimensions, max_speed, spawn_location, goal_location, time_step, initial_velocity, id, color):
         self.current_location = np.array(spawn_location, dtype=float)
         self.velocity = initial_velocity
         self.goal = np.array(goal_location, dtype=float)
-        self.radius = radius
+        self.radius = radius        # the outer invisible bounding circle for collision and goal detection 
+        self.shape = shape          # e.g. circle, square, rectangle
+        self.dimensions = dimensions     # e.g. [radius] [side_length] [x_width y_height]
         self.max_speed = max_speed
         self.time_step = time_step
         self.neighbours = []
@@ -45,15 +48,29 @@ class Robot:
         self.ID = id
         self.color = color
 
-    def is_goal_reached(self):
-        return np.linalg.norm(self.goal - self.current_location) < self.radius
+
+    def is_goal_reached(self, shape):
+        """Checks if the robot (or robot as obstacle) has reached its goal.
+
+        Args:
+            shape (String): Defines the robot's/obstacle's shape
+
+        Returns:
+            bool: True if goal reached.
+        """
+        if (shape=="circle"): return np.linalg.norm(self.goal - self.current_location) < self.radius
+        if (shape=="square"): return np.linalg.norm(self.goal - self.current_location) < self.dimensions[0]
+        if (shape=="rectangle"): return np.linalg.norm(self.goal - self.current_location) < min(self.dimensions[0], self.dimensions[1])
+
 
     def update_current_location(self):
         self.trail.append(self.current_location.copy())  # Store the current location in the trail
         self.current_location += self.velocity * self.time_step
 
+
     def preferred_velocity(self):
-        if not self.is_goal_reached():
+        shape = self.shape
+        if not self.is_goal_reached(shape):
             direction = self.goal - self.current_location
             direction_unit_vector = direction / np.linalg.norm(direction)
             self.pref_vel = self.max_speed * direction_unit_vector
@@ -77,8 +94,19 @@ class Robot:
         """
         
         new_vel = 2*new_vel - self.velocity
-        distance = (self.radius + robot2.radius) ** 2
-
+        
+        # distance = (self.radius + robot2.radius) ** 2       # TODO: May need to modify this for non-moving obstacles, like long-skinny rectangles used for walls 
+        if (self.shape=="circle" and robot2.shape=="circle"):
+            distance = (self.dimensions + robot2.dimensions) ** 2
+        elif (self.shape=="circle" and robot2.shape!="circle"):
+            # distance = (self.radius + robot2.dimensions) ** 2
+            distance = distance_to_rectangle(robot2.current_location,robot2.dimensions[0],robot2.dimensions[1],self.current_location,self.radius)
+        elif (self.shape!="circle" and robot2.shape=="circle"):
+            distance = distance_to_rectangle(self.current_location,self.dimensions[0],self.dimensions[1],robot2.current_location,robot2.radius)
+        else:
+            print("ERROR: At least one robot should be a circle!")
+            distance = 0
+        
         # Calculate coefficients for a quadratic equation representing the time of collision
         a = (new_vel[0] - robot2.velocity[0]) ** 2 + (new_vel[1] - robot2.velocity[1]) ** 2
 
@@ -112,7 +140,7 @@ class Robot:
         penalty = omega * (1 / time_to_col) + np.linalg.norm(self.pref_vel - new_vel)
 
         return penalty
-
+    
 
     def get_neighbours(self, kd_tree, all_robots, radius):
         self.neighbours = []
@@ -121,8 +149,10 @@ class Robot:
             if all_robots[i] != self:
                 self.neighbours.append(all_robots[i])
 
+
     def useable_velocities(self, combined_VO):
         self.AV = [vel for vel in self.velocities if tuple(vel) not in map(tuple, combined_VO)]
+
 
     def choose_velocity(self, combined_RVO, VO=False):
         self.preferred_velocity()
@@ -159,6 +189,7 @@ class Robot:
         # else:
         #     self.velocity = self.velocity
 
+
     def compute_VO_and_RVO(self, robot2):
 
         VO = []
@@ -171,6 +202,7 @@ class Robot:
                 RVO.append((vel + self.velocity) / 2)
         return VO, RVO
 
+
     def compute_combined_RVO(self, neighbour_robots):
         combined_VO = []
         combined_RVO = []
@@ -178,6 +210,7 @@ class Robot:
             combined_VO.extend(self.compute_VO_and_RVO(neighbour_robot)[0])
             combined_RVO.extend(self.compute_VO_and_RVO(neighbour_robot)[1])
         return combined_VO, combined_RVO
+
 
     def collision_cone_val(self, vel, robot2):
         rx = self.current_location[0]
@@ -196,28 +229,43 @@ class Robot:
                 -R ** 2 + (rx - obx) ** 2 + (ry - oby) ** 2) * ((vrx - vobx) ** 2 + (vry - voby) ** 2)
         return constraint_val
 
-    def draw(self, screen):
+
+    def draw(self, screen, shape):
         # Draw the trail if there are at least two points
         if len(self.trail) >= 2:
             # pygame.draw.lines(screen, TRAIL_COLOR, False, self.trail, 2)
             pygame.draw.lines(screen, self.color, False, self.trail, 2)
 
-        # Draw the robot as a circle
-        pygame.draw.circle(screen, self.color, (int(self.current_location[0]), int(self.current_location[1])),
-                           self.radius)
+        if (shape=="circle"):
+            # Draw the robot as a circle
+            pygame.draw.circle(screen, self.color, (int(self.current_location[0]), int(self.current_location[1])),
+                            self.radius)
+            
+            # Draw a line representing the direction of the current velocity
+            end_point = self.current_location + 10 * self.velocity
+            pygame.draw.line(screen, (0, 0, 0), self.current_location, end_point, 2)
+            
+            # Draw Goal
+            pygame.draw.circle(screen, self.color, (int(self.goal[0]), int(self.goal[1])),
+                            self.radius, width=3)
+        elif (shape=="rectangle"):
+            rect = pygame.Rect(self.current_location[0], self.current_location[1], self.dimensions[0], self.dimensions[1])
+            pygame.draw.rect(screen, self.color, rect)
+        else:
+            print("ERROR: NO SHAPE FOR ROBOT",self.ID)
 
-        # Draw a line representing the direction of the current velocity
-        end_point = self.current_location + 10 * self.velocity
-        pygame.draw.line(screen, (0, 0, 0), self.current_location, end_point, 2)
+        # # Draw a line representing the direction of the current velocity
+        # end_point = self.current_location + 10 * self.velocity
+        # pygame.draw.line(screen, (0, 0, 0), self.current_location, end_point, 2)
         
-        # Draw Goal
-        pygame.draw.circle(screen, self.color, (int(self.goal[0]), int(self.goal[1])),
-                           self.radius, width=3)
+        # # Draw Goal
+        # pygame.draw.circle(screen, self.color, (int(self.goal[0]), int(self.goal[1])),
+        #                    self.radius, width=3)
 
 
 def draw_robots(robots, screen):
     for robot in robots:
-        robot.draw(screen)
+        robot.draw(screen, robot.shape)
 
 
 def velocities_list():
@@ -287,6 +335,41 @@ def create_circular_locations(num_robots, radius, center):
         
     return spawn_locations, goal_locations
 
+
+def create_nonmoving_obstacle_locations(pattern):
+    """Takes in a pattern and intended to create a field of nonmoving robots to be avoided.
+        If modified, perhaps the obstacles to be avoided could move.
+
+    Args:
+        pattern (String): Field to create
+
+    Returns:
+        list: spawn_locations - where the obstacles to spawn
+        list: goal_locations - where the obtacles move to
+        
+    TODO: Modify code to accept different types of layout for non-moving and/or moving obstacles.
+    TODO: Consider using a PNG B+W map for non-moving obtacles (Like from WPI RBE UG A.I. for Robotics final project)
+    """
+    
+    spawn_locations = []
+    goal_locations = []
+    
+    if (pattern=="corridor"):
+        vertical_wall_1 = [50,50]
+        vertical_wall_2 = [50,SCREEN_HEIGHT-50]
+        vertical_wall_3 = [SCREEN_WIDTH-50,50]
+        verticle_wall_4 = [SCREEN_WIDTH-50,SCREEN_HEIGHT-50]
+        horizontal_wall_1 = [SCREEN_WIDTH/2,200]
+        horizontal_wall_2 = [SCREEN_WIDTH/2,400]
+        
+        spawn_locations.append(vertical_wall_1,vertical_wall_2,vertical_wall_3,verticle_wall_4,horizontal_wall_1,horizontal_wall_2)
+        goal_locations.append(vertical_wall_1,vertical_wall_2,vertical_wall_3,verticle_wall_4,horizontal_wall_1,horizontal_wall_2)
+    else:
+        print("NO PATTERN FOR OBSTACLES")
+    
+    return spawn_locations, goal_locations
+
+
 def create_robots(num_robots, radius):
     """
     This function creates a list of robots based on the number of robots needed.
@@ -321,6 +404,90 @@ def create_robots(num_robots, radius):
     return robots
 
 
+def create_obstacles(num_obstacles, pattern, shape, dimensions):
+    obstacles = []
+    # rgb_list = generate_rainbow_colors(num_obstacles)
+    color = [0,100,0]
+    center = (SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
+    
+    # VERTICAL RECTANGLES
+    for i in range(num_obstacles,5):
+        obstacle_name = "Obstacle{}".format(i+1)
+        # radius, max_speed, spawn_location, goal_location, time_step, initial_velocity, id, color
+        robot = Robot(
+            radius=ROBOT_RADIUS,
+            dimensions=[50,100],
+            max_speed=0,                                                            # non-moving
+            spawn_location=create_nonmoving_obstacle_locations(pattern)[0][i],
+            goal_location=create_circular_locations(pattern)[1][i],
+            time_step=TIME_STEP,
+            initial_velocity=np.array([0, 0]),
+            id=obstacle_name,
+            color=color
+        )
+        obstacles.append(robot)
+    
+    # HORIONTAL RECTANGLES
+    for i in range(num_obstacles+4,7):
+        obstacle_name = "Obstacle{}".format(i+1)
+        # radius, max_speed, spawn_location, goal_location, time_step, initial_velocity, id, color
+        robot = Robot(
+            radius=ROBOT_RADIUS,
+            dimensions=[300,50],
+            max_speed=0,                                                            # non-moving
+            spawn_location=create_nonmoving_obstacle_locations(pattern)[0][i],
+            goal_location=create_circular_locations(pattern)[1][i],
+            time_step=TIME_STEP,
+            initial_velocity=np.array([0, 0]),
+            id=obstacle_name,
+            color=color
+        )
+        obstacles.append(robot)   
+        
+    return obstacles
+
+
+def distance_to_rectangle(center_rectangle, width, height, center_circle, radius):
+    """
+    This function takes the center point of a rectangle, its width, height, 
+    the center point of a circle, and the circle's radius as input and returns 
+    the shortest distance between the outer wall of the rectangle and the edge 
+    of the circle.
+
+    Args:
+        center_rectangle (list): A list of length 2 containing the x and y coordinates of the rectangle's center point.
+        width (float): The width of the rectangle.
+        height (float): The height of the rectangle.
+        center_circle (list): A list of length 2 containing the x and y coordinates of the circle's center point.
+        radius (float): The radius of the circle.
+
+    Returns:
+        float: The shortest distance between the outer wall of the rectangle and the edge of the circle.
+    """
+    # Get the top left and bottom right corners of the rectangle
+    top_left = [center_rectangle[0] - width / 2, center_rectangle[1] + height / 2]
+    bot_right = [center_rectangle[0] + width / 2, center_rectangle[1] - height / 2]
+
+    # Find the closest point on the rectangle's edge to the circle's center
+    closest_point = center_rectangle.copy()
+    
+    # Check each side of the rectangle
+    for i in range(2):
+        if center_circle[i] < top_left[i]:
+            closest_point[i] = top_left[i]
+        elif center_circle[i] > bot_right[i]:
+            closest_point[i] = bot_right[i]
+
+    # Calculate the distance between the closest point and the circle's center
+    distance = math.sqrt(sum((a - b) ** 2 for a, b in zip(center_circle, closest_point)))
+
+    # Check if the circle is completely inside the rectangle
+    if distance > radius:
+        return distance - radius
+    else:
+        return 0
+        
+
 def update_time_counter(screen, start_time):
     # Update the time counter
     elapsed_time = time.time() - start_time
@@ -354,7 +521,42 @@ def main():
     # Create robots - spawn in circle
     num_robots = ROBOT_COUNT          # number of robots
     spawn_radius = CIRCLE_SPAWN_RADIUS      # radius of spawning circle #was 200 with screen (600,600)
-    robots = create_robots(num_robots, spawn_radius)
+    # robots = create_robots(num_robots, spawn_radius) # creates and sets spawn locations in a circle around the center of the screen
+    
+    
+    # --------------- MANUALLY CREATING OBSTACLES AND ROBOTS ----------------------
+    wall_LEFT_UPPER = Robot(radius=100, shape="rectangle", dimensions=[50,100], max_speed=0, spawn_location=(100, 150), goal_location=(100, 150), time_step=TIME_STEP,
+                   initial_velocity=np.array([0, 0]), id=1, color=(0,0,0))
+    wall_LEFT_LOWER = Robot(radius=100, shape="rectangle", dimensions=[50,100], max_speed=0, spawn_location=(100, 350), goal_location=(100, 350), time_step=TIME_STEP,
+                   initial_velocity=np.array([0, 0]), id=2, color=(0,0,0))
+    wall_RIGHT_UPPER = Robot(radius=100, shape="rectangle", dimensions=[50,100], max_speed=0, spawn_location=(450, 150), goal_location=(450, 150), time_step=TIME_STEP,
+                   initial_velocity=np.array([0, 0]), id=3, color=(0,0,0))
+    wall_RIGHT_LOWER = Robot(radius=100, shape="rectangle", dimensions=[50,100], max_speed=0, spawn_location=(450, 350), goal_location=(450, 350), time_step=TIME_STEP,
+                   initial_velocity=np.array([0, 0]), id=4, color=(0,0,0))
+    wall_CENTER_UPPER = Robot(radius=100, shape="rectangle", dimensions=[300,50], max_speed=0, spawn_location=(SCREEN_WIDTH/2-150, 200), goal_location=(SCREEN_WIDTH/2-150, 200), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=5, color=(0,0,0))
+    wall_CENTER_LOWER = Robot(radius=100, shape="rectangle", dimensions=[300,50], max_speed=0, spawn_location=(SCREEN_WIDTH/2-150, 350), goal_location=(SCREEN_WIDTH/2-150, 350), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=6, color=(0,0,0))
+    
+    # robots = []
+    # # create non-moving obstacles
+    # for i in range(1,5):
+        
+    
+    robot1 = Robot(radius=10, shape="circle", dimensions=[10], max_speed=5, spawn_location=(50, 50), goal_location=(550, 550), time_step=TIME_STEP,
+                   initial_velocity=np.array([0, 0]), id=7, color=(255,0,0))
+    robot2 = Robot(radius=10, shape="circle", dimensions=[10], max_speed=5, spawn_location=(50, 550), goal_location=(550, 50), time_step=TIME_STEP,
+                   initial_velocity=np.array([0, 0]), id=8, color=(0,0,255))
+    
+    robots = [wall_LEFT_UPPER,wall_LEFT_LOWER,wall_RIGHT_UPPER,wall_RIGHT_LOWER,wall_CENTER_UPPER,wall_CENTER_LOWER,robot1,robot2]
+    # --------------- END: MANUALLY CREATING OBSTACLES AND ROBOTS ----------------------
+    
+    
+    # pattern = "corridor"
+    # obstacles = create_nonmoving_obstacle_locations(pattern=="corridor")
+    
+    
+    
 
     # Compute velocities list for all robots
     velocities = velocities_list()
@@ -374,7 +576,7 @@ def main():
         
         count = 0
         for robot in robots:
-            if robot.is_goal_reached():
+            if robot.is_goal_reached(robot.shape):
                 count += 1
         if count == len(robots):
             if not time_elapsed_shown:
