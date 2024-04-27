@@ -1,5 +1,7 @@
 import pygame
 import numpy as np
+import pandas as pd
+import os
 import colorsys #HSV to RGB
 import time
 import math
@@ -29,6 +31,13 @@ CIRCLE_SPAWN_RADIUS = 200
 
 # MOST RECENT FILE TO COMBINE OUR WORK
 
+class Metrics:
+    def __init__(self, travel_distance, travel_time, success):
+        self.travel_distance = travel_distance
+        self.travel_time = travel_time
+        self.success = success
+
+
 class Robot:
     def __init__(self, radius, max_speed, spawn_location, goal_location, time_step, initial_velocity, id, color):
         self.current_location = np.array(spawn_location, dtype=float)
@@ -37,6 +46,9 @@ class Robot:
         self.radius = radius
         self.max_speed = max_speed
         self.time_step = time_step
+        self.travel_distance = 0
+        self.travel_time = 0
+        self.success = 0
         self.neighbours = []
         self.AV = []
         self.preferred_velocity()
@@ -49,16 +61,21 @@ class Robot:
         return np.linalg.norm(self.goal - self.current_location) < self.radius
 
     def update_current_location(self):
-        self.trail.append(self.current_location.copy())  # Store the current location in the trail
+        previous_location = self.current_location.copy()
+        self.trail.append(previous_location)  # Store the current location in the trail
         self.current_location += self.velocity * self.time_step
+        if not self.is_goal_reached():
+            self.travel_distance += abs(np.linalg.norm(self.current_location - previous_location))
 
     def preferred_velocity(self):
         if not self.is_goal_reached():
             direction = self.goal - self.current_location
             direction_unit_vector = direction / np.linalg.norm(direction)
             self.pref_vel = self.max_speed * direction_unit_vector
+            self.travel_time += self.time_step
         else:
             self.pref_vel = np.zeros(2)
+            self.success = 1
 
 
     def calc_vel_penalty(self, robot2, new_vel, omega):
@@ -112,7 +129,6 @@ class Robot:
         penalty = omega * (1 / time_to_col) + np.linalg.norm(self.pref_vel - new_vel)
 
         return penalty
-
 
     def get_neighbours(self, kd_tree, all_robots, radius):
         self.neighbours = []
@@ -195,6 +211,9 @@ class Robot:
         constraint_val = -((rx - obx) * (vrx - vobx) + (ry - oby) * (vry - voby)) ** 2 + (
                 -R ** 2 + (rx - obx) ** 2 + (ry - oby) ** 2) * ((vrx - vobx) ** 2 + (vry - voby) ** 2)
         return constraint_val
+    
+    def get_performance_metrics(self):
+        return Metrics(self.travel_distance, self.travel_time, self.success)
 
     def draw(self, screen):
         # Draw the trail if there are at least two points
@@ -343,14 +362,6 @@ def main():
     # Start the timer
     start_time = time.time()
 
-    # # Create robots with initial velocity
-    # Diagonal Robots
-    # robot1 = Robot(radius=10, max_speed=5, spawn_location=(50, 50), goal_location=(250, 250), time_step=TIME_STEP,
-    #                initial_velocity=np.array([0, 0]), id=1, color=(255,0,0))
-    # robot2 = Robot(radius=10, max_speed=5, spawn_location=(250, 250), goal_location=(50, 50), time_step=TIME_STEP,
-    #                initial_velocity=np.array([0, 0]), id=2, color=(0,0,255))
-    # robots = [robot1, robot2]
-    
     # Create robots - spawn in circle
     num_robots = ROBOT_COUNT          # number of robots
     spawn_radius = CIRCLE_SPAWN_RADIUS      # radius of spawning circle #was 200 with screen (600,600)
@@ -370,7 +381,6 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-
         
         count = 0
         for robot in robots:
@@ -406,7 +416,6 @@ def main():
         draw_robots(robots, screen)
         elapsed_time = update_time_counter(screen, start_time)
         
-        
 
         pygame.display.flip()
         clock.tick(FPS)
@@ -416,6 +425,42 @@ def main():
     
     pygame.display.quit()
     pygame.quit()
+
+    # Create a directory for the dataset
+    absolute_path = os.path.dirname(__file__)
+    output_folder = os.path.join(absolute_path, "../Simulation Results")
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    # Get performance metrics from all robots
+    robot_id_list = []
+    travel_distance_list = []
+    travel_time_list = []
+    success_list = []
+    i = 0
+    for robot in robots:
+        metrics = robot.get_performance_metrics()
+        robot_id_list.append("robot" + str(i))
+        travel_distance_list.append(metrics.travel_distance)
+        travel_time_list.append(metrics.travel_time)
+        success_list.append(metrics.success)
+        i += 1
+    robot_id_list.append("Average")
+    avg_travel_distance = sum(travel_distance_list) / len(travel_distance_list)
+    travel_distance_list.append(avg_travel_distance)
+    avg_travel_time = sum(travel_time_list) / len(travel_time_list)
+    travel_time_list.append(avg_travel_time)
+    success_fraction = sum(success_list) / len(success_list)
+    success_list.append(success_fraction)
+
+    # Save to CSV
+    df = pd.DataFrame()
+    df.insert(0, "Success", success_list)
+    df.insert(0, "Travel Time", travel_time_list)
+    df.insert(0, "Travel Distance", travel_distance_list)
+    df.insert(0, "Robot ID", robot_id_list)
+    data_file_path = os.path.join(output_folder, "data.csv")
+    df.to_csv(data_file_path, index=False)
 
 
 main()
