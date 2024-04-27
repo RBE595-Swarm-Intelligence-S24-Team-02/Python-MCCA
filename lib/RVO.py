@@ -32,8 +32,10 @@ CIRCLE_SPAWN_RADIUS = 200
 # MOST RECENT FILE TO COMBINE OUR WORK
 
 class Metrics:
-    def __init__(self, travel_distance, travel_time, success):
+    def __init__(self, travel_distance, shortest_distance, travel_time, shortest_time, success):
         self.travel_distance = travel_distance
+        self.shortest_distance = shortest_distance
+        self.shortest_time = shortest_time
         self.travel_time = travel_time
         self.success = success
 
@@ -49,6 +51,8 @@ class Robot:
         self.travel_distance = 0
         self.travel_time = 0
         self.success = 0
+        self.shortest_distance = np.linalg.norm(self.goal - self.current_location) - self.radius
+        self.shortest_time = self.shortest_distance / self.max_speed
         self.neighbours = []
         self.AV = []
         self.preferred_velocity()
@@ -65,7 +69,7 @@ class Robot:
         self.trail.append(previous_location)  # Store the current location in the trail
         self.current_location += self.velocity * self.time_step
         if not self.is_goal_reached():
-            self.travel_distance += abs(np.linalg.norm(self.current_location - previous_location))
+            self.travel_distance += np.linalg.norm(self.current_location - previous_location)
 
     def preferred_velocity(self):
         if not self.is_goal_reached():
@@ -213,7 +217,7 @@ class Robot:
         return constraint_val
     
     def get_performance_metrics(self):
-        return Metrics(self.travel_distance, self.travel_time, self.success)
+        return Metrics(self.travel_distance, self.shortest_distance, self.travel_time, self.shortest_time, self.success)
 
     def draw(self, screen):
         # Draw the trail if there are at least two points
@@ -435,28 +439,38 @@ def main():
     # Get performance metrics from all robots
     robot_id_list = []
     travel_distance_list = []
+    shortest_distance_list = []
     travel_time_list = []
+    shortest_time_list = []
     success_list = []
     i = 0
     for robot in robots:
         metrics = robot.get_performance_metrics()
         robot_id_list.append("robot" + str(i))
         travel_distance_list.append(metrics.travel_distance)
+        shortest_distance_list.append(metrics.shortest_distance)
         travel_time_list.append(metrics.travel_time)
+        shortest_time_list.append(metrics.shortest_time)
         success_list.append(metrics.success)
         i += 1
     robot_id_list.append("Average")
     avg_travel_distance = sum(travel_distance_list) / len(travel_distance_list)
     travel_distance_list.append(avg_travel_distance)
+    avg_shortest_distance = sum(shortest_distance_list) / len(shortest_distance_list)
+    shortest_distance_list.append(avg_shortest_distance)
     avg_travel_time = sum(travel_time_list) / len(travel_time_list)
     travel_time_list.append(avg_travel_time)
+    avg_shortest_time = sum(shortest_time_list) / len(shortest_time_list)
+    shortest_time_list.append(avg_shortest_time)
     success_fraction = sum(success_list) / len(success_list)
     success_list.append(success_fraction)
 
     # Save to CSV
     df = pd.DataFrame()
     df.insert(0, "Success", success_list)
+    df.insert(0, "Shortest Time", travel_time_list)
     df.insert(0, "Travel Time", travel_time_list)
+    df.insert(0, "Shortest Distance", shortest_distance_list)
     df.insert(0, "Travel Distance", travel_distance_list)
     df.insert(0, "Robot ID", robot_id_list)
     data_file_path = os.path.join(output_folder, "data.csv")
