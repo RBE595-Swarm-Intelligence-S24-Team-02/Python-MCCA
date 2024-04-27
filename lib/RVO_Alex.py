@@ -97,15 +97,16 @@ class Robot:
         
         # distance = (self.radius + robot2.radius) ** 2       # TODO: May need to modify this for non-moving obstacles, like long-skinny rectangles used for walls 
         if (self.shape=="circle" and robot2.shape=="circle"):
-            distance = (self.dimensions + robot2.dimensions) ** 2
+            distance = (self.radius + robot2.radius) ** 2
         elif (self.shape=="circle" and robot2.shape!="circle"):
             # distance = (self.radius + robot2.dimensions) ** 2
             distance = distance_to_rectangle(robot2.current_location,robot2.dimensions[0],robot2.dimensions[1],self.current_location,self.radius)
         elif (self.shape!="circle" and robot2.shape=="circle"):
             distance = distance_to_rectangle(self.current_location,self.dimensions[0],self.dimensions[1],robot2.current_location,robot2.radius)
         else:
-            print("ERROR: At least one robot should be a circle!")
+            # print("ERROR: At least one robot should be a circle!")
             distance = 0
+            return 0   # return penalty of 0
         
         # Calculate coefficients for a quadratic equation representing the time of collision
         a = (new_vel[0] - robot2.velocity[0]) ** 2 + (new_vel[1] - robot2.velocity[1]) ** 2
@@ -152,10 +153,14 @@ class Robot:
 
     def useable_velocities(self, combined_VO):
         self.AV = [vel for vel in self.velocities if tuple(vel) not in map(tuple, combined_VO)]
+        # print("\r", end="")
+        # if (self.shape=="circle"):
+        #     # print(f"\rpreferred_velocity:",self.preferred_velocity, end="", flush=True)
+        #     print(f"\rpref_vel:",self.pref_vel, end="", flush=True)
 
 
     def choose_velocity(self, combined_RVO, VO=False):
-        self.preferred_velocity()
+        self.preferred_velocity()       # updates self.pref_vel
         
         VO = IS_VO
         
@@ -183,9 +188,14 @@ class Robot:
             self.velocity = optimal_vel # VO part 
         else:
             self.velocity = (optimal_vel + self.velocity)/2 # RVO part (paper says this on page 3 definition 5)
-        
+            # self.velocity = np.min((optimal_vel + self.velocity)/2,self.max_speed) #this should stop nonmovable obstacles from moving weirdly
+            # if (self.shape=="circle" and (self.ID==1 or self.ID==2)):
+            #    print(f"Name:{self.shape}_{self.ID}: Velocity: {self.velocity}")
+                
+                # print(f"\rName:{self.shape}_{self.ID}: Velocity: {self.velocity}", end="", flush=True)
+                # print(f"Name:{self.shape}_{self.ID}: Velocity: {self.velocity}", flush=True)
         # if optimal_vel.any() != None:
-        #     self.velocity = (optimal_vel + self.velocity)/2
+        #     self.velocity = (optimal_vel + self.velocity)/2+
         # else:
         #     self.velocity = self.velocity
 
@@ -524,19 +534,56 @@ def main():
     # robots = create_robots(num_robots, spawn_radius) # creates and sets spawn locations in a circle around the center of the screen
     
     
-    # --------------- MANUALLY CREATING OBSTACLES AND ROBOTS ----------------------
-    wall_LEFT_UPPER = Robot(radius=100, shape="rectangle", dimensions=[50,100], max_speed=0, spawn_location=(100, 150), goal_location=(100, 150), time_step=TIME_STEP,
-                   initial_velocity=np.array([0, 0]), id=1, color=(0,0,0))
-    wall_LEFT_LOWER = Robot(radius=100, shape="rectangle", dimensions=[50,100], max_speed=0, spawn_location=(100, 350), goal_location=(100, 350), time_step=TIME_STEP,
-                   initial_velocity=np.array([0, 0]), id=2, color=(0,0,0))
-    wall_RIGHT_UPPER = Robot(radius=100, shape="rectangle", dimensions=[50,100], max_speed=0, spawn_location=(450, 150), goal_location=(450, 150), time_step=TIME_STEP,
-                   initial_velocity=np.array([0, 0]), id=3, color=(0,0,0))
-    wall_RIGHT_LOWER = Robot(radius=100, shape="rectangle", dimensions=[50,100], max_speed=0, spawn_location=(450, 350), goal_location=(450, 350), time_step=TIME_STEP,
-                   initial_velocity=np.array([0, 0]), id=4, color=(0,0,0))
-    wall_CENTER_UPPER = Robot(radius=100, shape="rectangle", dimensions=[300,50], max_speed=0, spawn_location=(SCREEN_WIDTH/2-150, 200), goal_location=(SCREEN_WIDTH/2-150, 200), time_step=0,
-                   initial_velocity=np.array([0, 0]), id=5, color=(0,0,0))
-    wall_CENTER_LOWER = Robot(radius=100, shape="rectangle", dimensions=[300,50], max_speed=0, spawn_location=(SCREEN_WIDTH/2-150, 350), goal_location=(SCREEN_WIDTH/2-150, 350), time_step=0,
-                   initial_velocity=np.array([0, 0]), id=6, color=(0,0,0))
+    # --------------- MANUALLY CREATING OBSTACLES AND ROBOTS - ATTEMPT: 1 ----------------------
+    # wall_LEFT_UPPER = Robot(radius=100, shape="rectangle", dimensions=[50,100], max_speed=0, spawn_location=(100, 150), goal_location=(100, 150), time_step=TIME_STEP,
+    #                initial_velocity=np.array([0, 0]), id=1, color=(0,0,0))
+    # wall_LEFT_LOWER = Robot(radius=100, shape="rectangle", dimensions=[50,100], max_speed=0, spawn_location=(100, 350), goal_location=(100, 350), time_step=TIME_STEP,
+    #                initial_velocity=np.array([0, 0]), id=2, color=(0,0,0))
+    # wall_RIGHT_UPPER = Robot(radius=100, shape="rectangle", dimensions=[50,100], max_speed=0, spawn_location=(450, 150), goal_location=(450, 150), time_step=TIME_STEP,
+    #                initial_velocity=np.array([0, 0]), id=3, color=(0,0,0))
+    # wall_RIGHT_LOWER = Robot(radius=100, shape="rectangle", dimensions=[50,100], max_speed=0, spawn_location=(450, 350), goal_location=(450, 350), time_step=TIME_STEP,
+    #                initial_velocity=np.array([0, 0]), id=4, color=(0,0,0))
+    # wall_CENTER_UPPER = Robot(radius=100, shape="rectangle", dimensions=[300,50], max_speed=0, spawn_location=(SCREEN_WIDTH/2-150, 200), goal_location=(SCREEN_WIDTH/2-150, 200), time_step=0,
+    #                initial_velocity=np.array([0, 0]), id=5, color=(0,0,0))
+    # wall_CENTER_LOWER = Robot(radius=100, shape="rectangle", dimensions=[300,50], max_speed=0, spawn_location=(SCREEN_WIDTH/2-150, 350), goal_location=(SCREEN_WIDTH/2-150, 350), time_step=0,
+    #                initial_velocity=np.array([0, 0]), id=6, color=(0,0,0))
+    
+    # # robots = []
+    # # # create non-moving obstacles
+    # # for i in range(1,5):
+        
+    
+    # robot1 = Robot(radius=10, shape="circle", dimensions=[10], max_speed=5, spawn_location=(50, 50), goal_location=(550, 550), time_step=TIME_STEP,
+    #                initial_velocity=np.array([0, 0]), id=7, color=(255,0,0))
+    # robot2 = Robot(radius=10, shape="circle", dimensions=[10], max_speed=5, spawn_location=(50, 550), goal_location=(550, 50), time_step=TIME_STEP,
+    #                initial_velocity=np.array([0, 0]), id=8, color=(0,0,255))
+    
+    # robots = [wall_LEFT_UPPER,wall_LEFT_LOWER,wall_RIGHT_UPPER,wall_RIGHT_LOWER,wall_CENTER_UPPER,wall_CENTER_LOWER,robot1,robot2]
+    # --------------- END: MANUALLY CREATING OBSTACLES AND ROBOTS - ATTEMPT: 1 ----------------------
+    
+    
+    # --------------- MANUALLY CREATING OBSTACLES AND ROBOTS - ATTEMPT: 2 ----------------------
+    wall_UPPER_1 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(100, 200), goal_location=(100, 200), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=21, color=(0,0,0))
+    wall_UPPER_2 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(200, 200), goal_location=(200, 200), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=22, color=(0,0,0))
+    wall_UPPER_3 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(300, 200), goal_location=(300, 200), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=23, color=(0,0,0))
+    wall_UPPER_4 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(400, 200), goal_location=(400, 200), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=24, color=(0,0,0))
+    wall_UPPER_5 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(500, 200), goal_location=(500, 200), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=25, color=(0,0,0))
+    
+    wall_LOWER_1 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(100, 400), goal_location=(100, 400), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=31, color=(0,0,0))
+    wall_LOWER_2 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(200, 400), goal_location=(200, 400), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=32, color=(0,0,0))
+    wall_LOWER_3 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(300, 400), goal_location=(300, 400), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=33, color=(0,0,0))
+    wall_LOWER_4 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(400, 400), goal_location=(400, 400), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=34, color=(0,0,0))
+    wall_LOWER_5 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(500, 400), goal_location=(500, 400), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=35, color=(0,0,0))
     
     # robots = []
     # # create non-moving obstacles
@@ -544,12 +591,16 @@ def main():
         
     
     robot1 = Robot(radius=10, shape="circle", dimensions=[10], max_speed=5, spawn_location=(50, 50), goal_location=(550, 550), time_step=TIME_STEP,
-                   initial_velocity=np.array([0, 0]), id=7, color=(255,0,0))
+                   initial_velocity=np.array([0, 0]), id=1, color=(255,0,0))
     robot2 = Robot(radius=10, shape="circle", dimensions=[10], max_speed=5, spawn_location=(50, 550), goal_location=(550, 50), time_step=TIME_STEP,
-                   initial_velocity=np.array([0, 0]), id=8, color=(0,0,255))
+                   initial_velocity=np.array([0, 0]), id=2, color=(0,0,255))
     
-    robots = [wall_LEFT_UPPER,wall_LEFT_LOWER,wall_RIGHT_UPPER,wall_RIGHT_LOWER,wall_CENTER_UPPER,wall_CENTER_LOWER,robot1,robot2]
-    # --------------- END: MANUALLY CREATING OBSTACLES AND ROBOTS ----------------------
+    robots = [robot1,robot2,wall_LOWER_1,wall_LOWER_2,wall_LOWER_3,wall_LOWER_4,wall_LOWER_5,wall_UPPER_1,wall_UPPER_2,wall_UPPER_3,wall_UPPER_4,wall_UPPER_5]
+    # --------------- END: MANUALLY CREATING OBSTACLES AND ROBOTS - ATTEMPT: 2 ----------------------
+    
+    
+    
+    
     
     
     # pattern = "corridor"
@@ -562,7 +613,8 @@ def main():
     velocities = velocities_list()
 
     for robot in robots:
-        robot.velocities += velocities
+        if (robot.shape=="circle"):
+            robot.velocities += velocities
 
     running = True
     time_elapsed_shown = False
