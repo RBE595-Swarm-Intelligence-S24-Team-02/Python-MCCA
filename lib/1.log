@@ -1,2 +1,146 @@
 pygame 2.5.2 (SDL 2.28.2, Python 3.10.12)
 Hello from the pygame community. https://www.pygame.org/contribute.html
+Robot 0 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
+Robot 1 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
+Robot 2 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
+Robot 3 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
+Robot 4 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
+Robot 5 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
+Robot 0 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
+Robot 1 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
+Robot 2 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
+Robot 3 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
+Robot 4 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
+Robot 5 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
+Robot 0 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
+Robot 1 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
+Robot 2 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
+Robot 3 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
+Robot 4 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
+Robot 5 - Res:      con: array([], dtype=float64)
+     fun: 0.0
+ message: 'The solution was determined in presolve as there are no non-trivial constraints.'
+     nit: 0
+   slack: array([], dtype=float64)
+  status: 0
+ success: True
+       x: array([0., 0.])
