@@ -325,6 +325,9 @@ def create_robots(num_robots, radius):
     robots = []
     rgb_list = generate_rainbow_colors(num_robots)
     center = (SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
+
+    spawn_locations = [(100,100), (100,200), (100,300), (300,100), (300,200), (300,300)]
+    goal_locations = [(300,100), (300,200), (300,300), (100,100), (100,200), (100,300)]
     
     for i in range(num_robots):
         robot_name = "Robot{}".format(i+1)
@@ -332,6 +335,8 @@ def create_robots(num_robots, radius):
         robot = Robot(
             radius=ROBOT_RADIUS,
             max_speed=ROBOT_MAX_VELOCITY,
+            # spawn_location=spawn_locations[i],
+            # goal_location=goal_locations[i],
             spawn_location=create_circular_locations(num_robots, radius, center)[0][i],
             goal_location=create_circular_locations(num_robots, radius, center)[1][i],
             time_step=TIME_STEP,
