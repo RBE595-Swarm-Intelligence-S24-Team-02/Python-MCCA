@@ -6,6 +6,11 @@ import math
 from scipy.spatial import KDTree
 from sympy import symbols, Eq, solve
 from typing import List
+# from pygame_screen_recorder import pygame_screen_recorder as pgr
+# import pygame_screen_record.ScreenRecorder
+# import ScreenRecorder
+from pygame_screen_record import ScreenRecorder, RecordingSaver
+import datetime
 
 # Constants
 WHITE = (255, 255, 255)
@@ -16,8 +21,8 @@ FPS = 120 # Game FPS, not real-time FPS
 
 # Variables to experiment with [VELOCITY_COUNT, NEIGHBOUR_DIST, ROBOT_COUNT] [36,200,4] [24,200,8] [12,400,16] [28,200,8] [12,200,24], [16,150,28]
 END_SIMULATION = False
-VELOCITY_COUNT = 36
-NEIGHBOUR_DIST = 300
+VELOCITY_COUNT = 36 #36
+NEIGHBOUR_DIST = 300 #300
 ROBOT_COUNT = 6
 IS_VO = False
 TIME_STEP = 0.1
@@ -43,7 +48,8 @@ class Robot:
         self.neighbours = []
         self.AV = []
         self.preferred_velocity()
-        self.velocities = [np.zeros(2), self.pref_vel]
+        # self.velocities = [np.zeros(2), self.pref_vel]
+        self.velocities = [self.pref_vel]
         self.trail = []  # Trail to store previous locations
         self.ID = id
         self.color = color
@@ -87,7 +93,7 @@ class Robot:
         Args:
             robot2 (Robot): Neighbor robot
             new_vel (np.array): Velocity inside the RVO
-            omega (int): Weight to change the impact of time to imapct on penalty
+            omega (int): Weight to change the impact of time to impact on penalty
 
         Returns:
             int: Penalty value
@@ -103,6 +109,7 @@ class Robot:
             distance = distance_to_rectangle(robot2.current_location,robot2.dimensions[0],robot2.dimensions[1],self.current_location,self.radius)
         elif (self.shape!="circle" and robot2.shape=="circle"):
             distance = distance_to_rectangle(self.current_location,self.dimensions[0],self.dimensions[1],robot2.current_location,robot2.radius)
+            return 0
         else:
             # print("ERROR: At least one robot should be a circle!")
             distance = 0
@@ -135,6 +142,7 @@ class Robot:
         # If we are overlapping and moving closer, collide now
         if t1 < 0 < t2 and b <= -1e-6:
             # time_to_col = 0 #removed/commented-out because this would cause division by zero.
+            self.velocity = self.pref_vel
             return 0
         else:
             time_to_col = t1  # Return the time to collision
@@ -154,9 +162,12 @@ class Robot:
     def useable_velocities(self, combined_VO):
         self.AV = [vel for vel in self.velocities if tuple(vel) not in map(tuple, combined_VO)]
         # print("\r", end="")
-        # if (self.shape=="circle"):
+        # if (self.shape=="circle" and (self.ID==1 or self.ID==2)):
         #     # print(f"\rpreferred_velocity:",self.preferred_velocity, end="", flush=True)
-        #     print(f"\rpref_vel:",self.pref_vel, end="", flush=True)
+            # print(f"\rpref_vel:",self.pref_vel, end="", flush=True)
+            # print("Circle ",self.ID,": ",self.AV)
+            # draw_usable_velocities(self)
+            
 
 
     def choose_velocity(self, combined_RVO, VO=False):
@@ -174,8 +185,11 @@ class Robot:
                     penalty = self.calc_vel_penalty(neighbour, vel, omega=1)
                     if penalty < min_penalty:
                         min_penalty = penalty
-                        # print('Robot ID: ', self.ID, 'Penalty: ', penalty, '\n')
-                        optimal_vel = vel
+                        print('Robot ID: ', self.ID, 'Penalty: ', penalty, '\n')
+                        if penalty==0:
+                            optimal_vel = self.pref_vel
+                        else:
+                            optimal_vel = vel
         else:
             min_closeness = float('inf')
             for vel in self.AV:
@@ -200,6 +214,15 @@ class Robot:
         #     self.velocity = self.velocity
 
 
+    def compute_combined_RVO(self, neighbour_robots):
+        combined_VO = []
+        combined_RVO = []
+        for neighbour_robot in neighbour_robots:
+            combined_VO.extend(self.compute_VO_and_RVO(neighbour_robot)[0])
+            combined_RVO.extend(self.compute_VO_and_RVO(neighbour_robot)[1])
+        return combined_VO, combined_RVO
+
+
     def compute_VO_and_RVO(self, robot2):
 
         VO = []
@@ -211,15 +234,6 @@ class Robot:
                 VO.append(vel)
                 RVO.append((vel + self.velocity) / 2)
         return VO, RVO
-
-
-    def compute_combined_RVO(self, neighbour_robots):
-        combined_VO = []
-        combined_RVO = []
-        for neighbour_robot in neighbour_robots:
-            combined_VO.extend(self.compute_VO_and_RVO(neighbour_robot)[0])
-            combined_RVO.extend(self.compute_VO_and_RVO(neighbour_robot)[1])
-        return combined_VO, combined_RVO
 
 
     def collision_cone_val(self, vel, robot2):
@@ -237,6 +251,7 @@ class Robot:
         # if constraint_val >= 0, no collision , else there will be a collision in the future
         constraint_val = -((rx - obx) * (vrx - vobx) + (ry - oby) * (vry - voby)) ** 2 + (
                 -R ** 2 + (rx - obx) ** 2 + (ry - oby) ** 2) * ((vrx - vobx) ** 2 + (vry - voby) ** 2)
+        # print("constraint_val: ", constraint_val)
         return constraint_val
 
 
@@ -247,9 +262,14 @@ class Robot:
             pygame.draw.lines(screen, self.color, False, self.trail, 2)
 
         if (shape=="circle"):
-            # Draw the robot as a circle
-            pygame.draw.circle(screen, self.color, (int(self.current_location[0]), int(self.current_location[1])),
-                            self.radius)
+            if (self.ID==1 and self.ID==2):
+                # Draw the robot as a circle
+                pygame.draw.circle(screen, self.color, (int(self.current_location[0]), int(self.current_location[1])),
+                                self.radius)
+            else:
+                # Draw the obsticles
+                pygame.draw.circle(screen, self.color, (int(self.current_location[0]), int(self.current_location[1])),
+                                self.radius, width=3)
             
             # Draw a line representing the direction of the current velocity
             end_point = self.current_location + 10 * self.velocity
@@ -258,6 +278,12 @@ class Robot:
             # Draw Goal
             pygame.draw.circle(screen, self.color, (int(self.goal[0]), int(self.goal[1])),
                             self.radius, width=3)
+            
+            # Draw line(s) representing the direction of AV
+            for av in self.AV:
+                end_point = self.current_location + 5 * av
+                pygame.draw.line(screen, (255, 0, 0), self.current_location, end_point, 2)
+            
         elif (shape=="rectangle"):
             rect = pygame.Rect(self.current_location[0], self.current_location[1], self.dimensions[0], self.dimensions[1])
             pygame.draw.rect(screen, self.color, rect)
@@ -285,7 +311,14 @@ def velocities_list():
     for i in np.arange(0, 6, 1):
         if i>0:
             velocities = [i * np.array([x,y]) for x,y in zip(x_values,y_values)]
+    # print("velocities: ",velocities)
+    # draw_possible_velocities(velocities)
     return velocities
+
+# def draw_possible_velocities():
+#     # Draw a line representing the direction of the current velocity
+#     end_point = self.current_location + 10 * self.velocity
+#     pygame.draw.line(screen, (0, 0, 0), self.current_location, end_point, 2)
 
 
 def generate_rainbow_colors(num_colors: int) -> List[tuple]:
@@ -511,6 +544,16 @@ def update_time_counter(screen, start_time):
     return elapsed_time
 
 
+def draw_lines(self, screen, inputs, magnitude=10):
+    for robot in self:
+        if (robot.ID==1 or robot.ID==2):
+            for input in inputs:
+                end_point = robot.current_location + magnitude * input
+                pygame.draw.line(screen, (200, 200, 200), (int(robot.current_location[0]), int(robot.current_location[1])), (int(end_point[0]), int(end_point[1])),  )
+                # pygame.draw.circle(screen, (0,0,0), (int(end_point[0]), int(end_point[1])),
+                #                     robot.radius, width=3)
+       
+
 def main():
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -590,7 +633,7 @@ def main():
     # for i in range(1,5):
         
     
-    robot1 = Robot(radius=10, shape="circle", dimensions=[10], max_speed=5, spawn_location=(50, 50), goal_location=(550, 550), time_step=TIME_STEP,
+    robot1 = Robot(radius=10, shape="circle", dimensions=[10], max_speed=5, spawn_location=(25, 50), goal_location=(550, 550), time_step=TIME_STEP,
                    initial_velocity=np.array([0, 0]), id=1, color=(255,0,0))
     robot2 = Robot(radius=10, shape="circle", dimensions=[10], max_speed=5, spawn_location=(50, 550), goal_location=(550, 50), time_step=TIME_STEP,
                    initial_velocity=np.array([0, 0]), id=2, color=(0,0,255))
@@ -619,6 +662,10 @@ def main():
     running = True
     time_elapsed_shown = False
 
+    ### RECORD
+    # recorder = ScreenRecorder(30) # Pass your desired fps
+    # recorder.start_rec() # Start recording
+
     while running:
 
         for event in pygame.event.get():
@@ -642,21 +689,34 @@ def main():
         combined_vos = []
         combined_rvos = []
         for robot in robots:
-            robot.get_neighbours(kd_tree, robots, radius=NEIGHBOUR_DIST) #increased from 100
-            vo, rvo = robot.compute_combined_RVO(robot.neighbours)
-            combined_vos.append(vo)
-            combined_rvos.append(rvo)
+            if (robot.ID==1 or robot.ID==2):
+                robot.get_neighbours(kd_tree, robots, radius=NEIGHBOUR_DIST) #increased from 100
+                vo, rvo = robot.compute_combined_RVO(robot.neighbours)
+                # print("rvo",rvo)
+                # draw_lines(robot,screen,rvo,10)
+                
+                # for input in rvo:
+                #     end_point = robot.current_location + 5 * input
+                #     # pygame.draw.line(screen, (200, 200, 200), (int(self.current_location[0]), int(self.current_location[1])), (int(end_point[0]), int(end_point[1])), 2)
+                #     pygame.draw.circle(screen, (100,100,100), (int(end_point[0]), int(end_point[1])),
+                #                         robot.radius, width=3)
+                
+                
+                combined_vos.append(vo)
+                combined_rvos.append(rvo)
 
         # Update robots
         i = 0
         for robot in robots:
-            robot.useable_velocities(combined_vos[i])
-            robot.choose_velocity(combined_rvos[i])
-            robot.update_current_location()
+            if (robot.ID==1 or robot.ID==2):
+                robot.useable_velocities(combined_vos[i])
+                robot.choose_velocity(combined_rvos[i])
+                robot.update_current_location()
             i += 1
 
         # Draw on the screen
         screen.fill(WHITE)
+        draw_lines(robots,screen,rvo,10) #draws RVO lines to bounding points?
         draw_robots(robots, screen)
         elapsed_time = update_time_counter(screen, start_time)
         
@@ -667,6 +727,22 @@ def main():
 
     # print("Start Time:",start_time)
     print(f"Time Elapsed: {elapsed_time:.3f} [s]")
+    
+    
+    # Get the current date and time
+    current_datetime = datetime.datetime.now()
+    formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
+    
+    ### END RECORDING
+    # recorder.stop_rec()	# stop recording
+    # recording = recorder.get_single_recording() # returns a Recording
+    # save(recording,(f"{formatted_datetime} my_recording","mp4")) # save the recording as mp4
+    
+    # recorder.stop_rec().get_single_recording().save((f"{formatted_datetime} my_recording","mp4"))
+    
+    # recordings = recorder.get_recordings()
+    # saver = RecordingSaver(recordings, "mp4", "saved_files")
+    # saver.save()
     
     pygame.display.quit()
     pygame.quit()
