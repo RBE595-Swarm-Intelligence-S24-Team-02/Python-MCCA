@@ -162,25 +162,63 @@ def main():
     IS_VO = True  # Set True for VO and False for RVO
 
     # Define circle parameters
-    circle_center = np.array([SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2])
-    circle_radius = min(SCREEN_WIDTH, SCREEN_HEIGHT) // 3
+    # circle_center = np.array([SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2])
+    # circle_radius = min(SCREEN_WIDTH, SCREEN_HEIGHT) // 3
 
     # Define colors for each robot
     robot_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255)]
 
     # Spawn robots evenly spaced on the circumference of a circle
+    # robots = []
+    # for i in range(num_robots):
+    #     angle = 2 * math.pi * i / num_robots
+    #     spawn_x = circle_center[0] + circle_radius * math.cos(angle)
+    #     spawn_y = circle_center[1] + circle_radius * math.sin(angle)
+
+    #     # Define opposite direction goal positions
+    #     goal_x = circle_center[0] + circle_radius * math.cos(angle + math.pi)
+    #     goal_y = circle_center[1] + circle_radius * math.sin(angle + math.pi)
+
+    #     robots.append(Robot(10, max_velocity_change, [spawn_x, spawn_y], [goal_x, goal_y], time_step, i,
+    #                         robot_colors[i]))
+    
+    # Let  us initialize three robots on left side and three on right side
     robots = []
     for i in range(num_robots):
-        angle = 2 * math.pi * i / num_robots
-        spawn_x = circle_center[0] + circle_radius * math.cos(angle)
-        spawn_y = circle_center[1] + circle_radius * math.sin(angle)
-
-        # Define opposite direction goal positions
-        goal_x = circle_center[0] + circle_radius * math.cos(angle + math.pi)
-        goal_y = circle_center[1] + circle_radius * math.sin(angle + math.pi)
-
+        if i < 3:
+            spawn_x = 100
+            spawn_y = 200 + i * 200
+            goal_x = 700
+            goal_y = 200 + i * 200
+        else:
+            spawn_x = 700
+            spawn_y = 200 + (i - 3) * 200a
+            goal_x = 100
+            goal_y = 200 + (i - 3) * 200
         robots.append(Robot(10, max_velocity_change, [spawn_x, spawn_y], [goal_x, goal_y], time_step, i,
                             robot_colors[i]))
+    
+    # Let us add Static Obstacles
+    # Obstacle 
+    # MAP STRUCTURE
+    '''
+    000000000000000000000
+    000000111111100000000
+    000000000000000000000
+    000000000000000000000
+    000000111111100000000
+    000000000000000000000
+    '''
+    # Above is the map structure where 0 is free space and 1 is obstacle
+    
+    # Define Obstacle
+    
+    obstacles = []
+    # 2 obstacles - Rectangular
+    # Pygame Rect - (x, y, width, height)
+    obstacles.append(pygame.Rect(SCREEN_WIDTH // 2, 0, 20, 350))
+    obstacles.append(pygame.Rect(SCREEN_WIDTH // 2 , SCREEN_HEIGHT - 1.5* SCREEN_HEIGHT // 4, 20, 350))
+    
 
     running = True
     count = 0
@@ -220,6 +258,10 @@ def main():
         screen.fill(WHITE)
         for robot in robots:
             robot.draw(screen)
+            
+        # Draw Obstacles
+        for obstacle in obstacles:
+            pygame.draw.rect(screen, BLACK, obstacle)
         pygame.display.flip()
         clock.tick(FPS)
         count += 1
