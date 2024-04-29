@@ -19,6 +19,9 @@ SCREEN_WIDTH = 600
 SCREEN_HEIGHT = 600
 FPS = 120 # Game FPS, not real-time FPS
 
+WINDOW_FPS = 15 # Recording FPS
+RECORD = False
+13
 # Variables to experiment with [VELOCITY_COUNT, NEIGHBOUR_DIST, ROBOT_COUNT] [36,200,4] [24,200,8] [12,400,16] [28,200,8] [12,200,24], [16,150,28]
 END_SIMULATION = False
 VELOCITY_COUNT = 36 #36
@@ -53,6 +56,7 @@ class Robot:
         self.trail = []  # Trail to store previous locations
         self.ID = id
         self.color = color
+        
 
 
     def is_goal_reached(self, shape):
@@ -282,7 +286,7 @@ class Robot:
             # Draw line(s) representing the direction of AV
             for av in self.AV:
                 end_point = self.current_location + 5 * av
-                pygame.draw.line(screen, (255, 0, 0), self.current_location, end_point, 2)
+                pygame.draw.line(screen, (0, 255, 0), self.current_location, end_point, 2)
             
         elif (shape=="rectangle"):
             rect = pygame.Rect(self.current_location[0], self.current_location[1], self.dimensions[0], self.dimensions[1])
@@ -544,6 +548,7 @@ def update_time_counter(screen, start_time):
     return elapsed_time
 
 
+#TODO: Why are the RVO plots wrong. --> Seems to be plotting same points as relative to each robot instead of each robot's own RVO>
 def draw_lines(self, screen, inputs, magnitude=10):
     for robot in self:
         if (robot.ID==1 or robot.ID==2):
@@ -552,6 +557,15 @@ def draw_lines(self, screen, inputs, magnitude=10):
                 pygame.draw.line(screen, (200, 200, 200), (int(robot.current_location[0]), int(robot.current_location[1])), (int(end_point[0]), int(end_point[1])),  )
                 # pygame.draw.circle(screen, (0,0,0), (int(end_point[0]), int(end_point[1])),
                 #                     robot.radius, width=3)
+                
+def draw_lines_RVO(self, screen, inputs, magnitude=10):
+    robot = self
+    if (robot.ID==1 or robot.ID==2):
+        for input in inputs:
+            end_point = robot.current_location + magnitude * input
+            pygame.draw.line(screen, (200, 200, 200), (int(robot.current_location[0]), int(robot.current_location[1])), (int(end_point[0]), int(end_point[1])),  )
+            # pygame.draw.circle(screen, (0,0,0), (int(end_point[0]), int(end_point[1])),
+            #                     robot.radius, width=3)
        
 
 def main():
@@ -576,7 +590,7 @@ def main():
     spawn_radius = CIRCLE_SPAWN_RADIUS      # radius of spawning circle #was 200 with screen (600,600)
     # robots = create_robots(num_robots, spawn_radius) # creates and sets spawn locations in a circle around the center of the screen
     
-    
+    robots = []
     
     
     # ------------------------------------------------------------------------------------------
@@ -659,12 +673,12 @@ def main():
     # --------------- MANUALLY CREATING OBSTACLES AND ROBOTS - ATTEMPT: 3 ----------------------
     # ------------------------------------------------------------------------------------------
     
-    # wall_UPPER_1 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 0), goal_location=(SCREEN_WIDTH/2, 0), time_step=0,
-    #                initial_velocity=np.array([0, 0]), id=21, color=(0,0,0))
-    # wall_UPPER_2 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 100), goal_location=(SCREEN_WIDTH/2, 100), time_step=0,
-    #                initial_velocity=np.array([0, 0]), id=22, color=(0,0,0))
-    # wall_UPPER_3 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 200), goal_location=(SCREEN_WIDTH/2, 200), time_step=0,
-    #                initial_velocity=np.array([0, 0]), id=23, color=(0,0,0))
+    wall_UPPER_1 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 0), goal_location=(SCREEN_WIDTH/2, 0), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=21, color=(0,0,0))
+    wall_UPPER_2 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 100), goal_location=(SCREEN_WIDTH/2, 100), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=22, color=(0,0,0))
+    wall_UPPER_3 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 200), goal_location=(SCREEN_WIDTH/2, 200), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=23, color=(0,0,0))
     # # wall_UPPER_4 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 300), goal_location=(SCREEN_WIDTH/2, 300), time_step=0,
     # #                initial_velocity=np.array([0, 0]), id=24, color=(0,0,0))
     # # wall_UPPER_5 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 400), goal_location=(SCREEN_WIDTH/2, 400), time_step=0,
@@ -674,14 +688,21 @@ def main():
     # #                initial_velocity=np.array([0, 0]), id=31, color=(0,0,0))
     # # wall_LOWER_2 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 400), goal_location=(SCREEN_WIDTH/2, 300), time_step=0,
     #             #    initial_velocity=np.array([0, 0]), id=32, color=(0,0,0))
-    # wall_LOWER_3 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 400), goal_location=(SCREEN_WIDTH/2, 400), time_step=0,
-    #                initial_velocity=np.array([0, 0]), id=33, color=(0,0,0))
-    # wall_LOWER_4 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 400), goal_location=(SCREEN_WIDTH/2, 500), time_step=0,
-    #                initial_velocity=np.array([0, 0]), id=34, color=(0,0,0))
-    # wall_LOWER_5 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, SCREEN_HEIGHT), goal_location=(SCREEN_WIDTH/2, SCREEN_HEIGHT), time_step=0,
-    #                initial_velocity=np.array([0, 0]), id=35, color=(0,0,0))
+    wall_LOWER_3 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 400), goal_location=(SCREEN_WIDTH/2, 400), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=33, color=(0,0,0))
+    wall_LOWER_4 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 400), goal_location=(SCREEN_WIDTH/2, 500), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=34, color=(0,0,0))
+    wall_LOWER_5 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, SCREEN_HEIGHT), goal_location=(SCREEN_WIDTH/2, SCREEN_HEIGHT), time_step=0,
+                   initial_velocity=np.array([0, 0]), id=35, color=(0,0,0))
     
     
+    # robots.append(wall_UPPER_1)
+    # robots.append(wall_UPPER_2)
+    # robots.append(wall_UPPER_3)
+    
+    # robots.append(wall_LOWER_3)
+    # robots.append(wall_LOWER_4)
+    # robots.append(wall_LOWER_5)
     
     
     
@@ -711,49 +732,54 @@ def main():
     
     
     
+    ##### 719-795
     
-    robots = []
-    # rgb_list = generate_rainbow_colors(num_robots)
-    center = (SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
-    spacing = 10
+    # robots = []
+    # # rgb_list = generate_rainbow_colors(num_robots)
+    # center = (SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
+    # spacing = 10
     num_robots = int(260/10)
     for i in range(0,num_robots):
-        upper_spawn = np.array([SCREEN_WIDTH/2,i])
-        lower_spawn = np.array([SCREEN_WIDTH/2,num_robots-i])
-    
-    for i in range(num_robots):
-        robot_name = "Robot{}".format(i+1)
-        # radius, max_speed, spawn_location, goal_location, time_step, initial_velocity, id, color
-        robot = Robot(
-            radius=20,
-            shape="circle",
-            dimensions=[50],
-            max_speed=ROBOT_MAX_VELOCITY,
-            spawn_location=upper_spawn,
-            goal_location=upper_spawn,
-            time_step=TIME_STEP,
-            initial_velocity=np.array([0, 0]),
-            id=robot_name,
-            color=(0,0,0)
-        )
-        robots.append(robot)
+        upper_spawn = np.array([int(SCREEN_WIDTH/2),i])
+        lower_spawn = np.array([int(SCREEN_WIDTH/2),num_robots-i])
         
-    for i in range(num_robots):
-        robot_name = "Robot{}".format(i+1)
-        # radius, max_speed, spawn_location, goal_location, time_step, initial_velocity, id, color
-        robot = Robot(
-            radius=20,
-            shape="circle",
-            dimensions=[50],
-            max_speed=ROBOT_MAX_VELOCITY,
-            spawn_location=lower_spawn,
-            goal_location=lower_spawn,
-            time_step=TIME_STEP,
-            initial_velocity=np.array([0, 0]),
-            id=robot_name,
-            color=(0,0,0)
-        )
-        robots.append(robot)
+    # for i in range(20,num_robots+20):
+    #     robot_name = f"wall_{i}"
+    #     robot_name = 
+    
+    # for i in range(num_robots):
+    #     robot_name = "Robot{}".format(i+1)
+    #     # radius, max_speed, spawn_location, goal_location, time_step, initial_velocity, id, color
+    #     robot = Robot(
+    #         radius=20,
+    #         shape="circle",
+    #         dimensions=[50],
+    #         max_speed=ROBOT_MAX_VELOCITY,
+    #         spawn_location=upper_spawn,
+    #         goal_location=upper_spawn,
+    #         time_step=TIME_STEP,
+    #         initial_velocity=np.array([0, 0]),
+    #         id=robot_name,
+    #         color=(0,0,0)
+    #     )
+    #     robots.append(robot)
+        
+    # for i in range(num_robots):
+    #     robot_name = "Robot{}".format(i+1)
+    #     # radius, max_speed, spawn_location, goal_location, time_step, initial_velocity, id, color
+    #     robot = Robot(
+    #         radius=20,
+    #         shape="circle",
+    #         dimensions=[50],
+    #         max_speed=ROBOT_MAX_VELOCITY,
+    #         spawn_location=lower_spawn,
+    #         goal_location=lower_spawn,
+    #         time_step=TIME_STEP,
+    #         initial_velocity=np.array([0, 0]),
+    #         id=robot_name,
+    #         color=(0,0,0)
+        # )
+    # robots.append(robot)
     
     
     
@@ -794,7 +820,13 @@ def main():
     robots.append(robot9)
     robots.append(robot10)
     
+    robots.append(wall_UPPER_1)
+    robots.append(wall_UPPER_2)
+    robots.append(wall_UPPER_3)
     
+    robots.append(wall_LOWER_3)
+    robots.append(wall_LOWER_4)
+    robots.append(wall_LOWER_5)
     
     # robots = [robot1,robot2,robot3,robot4,robot5,wall_LOWER_3,wall_LOWER_4,wall_LOWER_5,wall_UPPER_1,wall_UPPER_2,wall_UPPER_3]
     # robots = [robot1,robot2,robot3,robot4,robot5,robot6,robot7,robot8,robot9,robot10,wall_LOWER_3,wall_LOWER_4,wall_LOWER_5,wall_UPPER_1,wall_UPPER_2,wall_UPPER_3]
@@ -833,6 +865,14 @@ def main():
     ### RECORD
     # recorder = ScreenRecorder(30) # Pass your desired fps
     # recorder.start_rec() # Start recording
+    
+    if RECORD:
+        window = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        frame_count = 0
+        # exiting = False
+        clock = pygame.time.Clock()
+
+
 
     while running:
 
@@ -860,6 +900,8 @@ def main():
             if (robot.ID==1 or robot.ID==2):
                 robot.get_neighbours(kd_tree, robots, radius=NEIGHBOUR_DIST) #increased from 100
                 vo, rvo = robot.compute_combined_RVO(robot.neighbours)
+                
+                draw_lines_RVO(robot,screen,rvo,10)
                 # print("rvo",rvo)
                 # draw_lines(robot,screen,rvo,10)
                 
@@ -884,7 +926,7 @@ def main():
 
         # Draw on the screen
         screen.fill(WHITE)
-        draw_lines(robots,screen,rvo,10) #draws RVO lines to bounding points?
+        # draw_lines(robots,screen,rvo,10) #draws RVO lines to bounding points?
         draw_robots(robots, screen)
         elapsed_time = update_time_counter(screen, start_time)
         
@@ -892,6 +934,13 @@ def main():
 
         pygame.display.flip()
         clock.tick(FPS)
+        
+        
+        if RECORD:
+            frame_count += 1
+            filename = f"img/screen_{frame_count:04d}.png"
+            pygame.image.save(window, filename)
+            clock.tick(WINDOW_FPS)  # Limit FPS
 
     # print("Start Time:",start_time)
     print(f"Time Elapsed: {elapsed_time:.3f} [s]")
