@@ -269,7 +269,7 @@ class Robot:
             else:
                 # Draw the obsticles
                 pygame.draw.circle(screen, self.color, (int(self.current_location[0]), int(self.current_location[1])),
-                                self.radius, width=3)
+                                self.radius)
             
             # Draw a line representing the direction of the current velocity
             end_point = self.current_location + 10 * self.velocity
@@ -596,7 +596,7 @@ def main():
     # wall_CENTER_LOWER = Robot(radius=100, shape="rectangle", dimensions=[300,50], max_speed=0, spawn_location=(SCREEN_WIDTH/2-150, 350), goal_location=(SCREEN_WIDTH/2-150, 350), time_step=0,
     #                initial_velocity=np.array([0, 0]), id=6, color=(0,0,0))
     
-    # # robots = []
+    # robots = []
     # # # create non-moving obstacles
     # # for i in range(1,5):
         
@@ -659,27 +659,103 @@ def main():
     # --------------- MANUALLY CREATING OBSTACLES AND ROBOTS - ATTEMPT: 3 ----------------------
     # ------------------------------------------------------------------------------------------
     
-    wall_UPPER_1 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 0), goal_location=(SCREEN_WIDTH/2, 0), time_step=0,
-                   initial_velocity=np.array([0, 0]), id=21, color=(0,0,0))
-    wall_UPPER_2 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 100), goal_location=(SCREEN_WIDTH/2, 100), time_step=0,
-                   initial_velocity=np.array([0, 0]), id=22, color=(0,0,0))
-    wall_UPPER_3 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 200), goal_location=(SCREEN_WIDTH/2, 200), time_step=0,
-                   initial_velocity=np.array([0, 0]), id=23, color=(0,0,0))
-    # wall_UPPER_4 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 300), goal_location=(SCREEN_WIDTH/2, 300), time_step=0,
-    #                initial_velocity=np.array([0, 0]), id=24, color=(0,0,0))
-    # wall_UPPER_5 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 400), goal_location=(SCREEN_WIDTH/2, 400), time_step=0,
-    #                initial_velocity=np.array([0, 0]), id=25, color=(0,0,0))
+    # wall_UPPER_1 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 0), goal_location=(SCREEN_WIDTH/2, 0), time_step=0,
+    #                initial_velocity=np.array([0, 0]), id=21, color=(0,0,0))
+    # wall_UPPER_2 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 100), goal_location=(SCREEN_WIDTH/2, 100), time_step=0,
+    #                initial_velocity=np.array([0, 0]), id=22, color=(0,0,0))
+    # wall_UPPER_3 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 200), goal_location=(SCREEN_WIDTH/2, 200), time_step=0,
+    #                initial_velocity=np.array([0, 0]), id=23, color=(0,0,0))
+    # # wall_UPPER_4 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 300), goal_location=(SCREEN_WIDTH/2, 300), time_step=0,
+    # #                initial_velocity=np.array([0, 0]), id=24, color=(0,0,0))
+    # # wall_UPPER_5 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 400), goal_location=(SCREEN_WIDTH/2, 400), time_step=0,
+    # #                initial_velocity=np.array([0, 0]), id=25, color=(0,0,0))
     
-    # wall_LOWER_1 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 400), goal_location=(SCREEN_WIDTH/2, 200), time_step=0,
-    #                initial_velocity=np.array([0, 0]), id=31, color=(0,0,0))
-    # wall_LOWER_2 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 400), goal_location=(SCREEN_WIDTH/2, 300), time_step=0,
-                #    initial_velocity=np.array([0, 0]), id=32, color=(0,0,0))
-    wall_LOWER_3 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 400), goal_location=(SCREEN_WIDTH/2, 400), time_step=0,
-                   initial_velocity=np.array([0, 0]), id=33, color=(0,0,0))
-    wall_LOWER_4 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 400), goal_location=(SCREEN_WIDTH/2, 500), time_step=0,
-                   initial_velocity=np.array([0, 0]), id=34, color=(0,0,0))
-    wall_LOWER_5 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, SCREEN_HEIGHT), goal_location=(SCREEN_WIDTH/2, SCREEN_HEIGHT), time_step=0,
-                   initial_velocity=np.array([0, 0]), id=35, color=(0,0,0))
+    # # wall_LOWER_1 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 400), goal_location=(SCREEN_WIDTH/2, 200), time_step=0,
+    # #                initial_velocity=np.array([0, 0]), id=31, color=(0,0,0))
+    # # wall_LOWER_2 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 400), goal_location=(SCREEN_WIDTH/2, 300), time_step=0,
+    #             #    initial_velocity=np.array([0, 0]), id=32, color=(0,0,0))
+    # wall_LOWER_3 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 400), goal_location=(SCREEN_WIDTH/2, 400), time_step=0,
+    #                initial_velocity=np.array([0, 0]), id=33, color=(0,0,0))
+    # wall_LOWER_4 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, 400), goal_location=(SCREEN_WIDTH/2, 500), time_step=0,
+    #                initial_velocity=np.array([0, 0]), id=34, color=(0,0,0))
+    # wall_LOWER_5 = Robot(radius=50, shape="circle", dimensions=[50], max_speed=0, spawn_location=(SCREEN_WIDTH/2, SCREEN_HEIGHT), goal_location=(SCREEN_WIDTH/2, SCREEN_HEIGHT), time_step=0,
+    #                initial_velocity=np.array([0, 0]), id=35, color=(0,0,0))
+    
+    
+    
+    
+    
+    # spacing = 10
+    # robots = {}
+    # # Top wall
+    # start_ID = 20
+    # end_ID = 80
+    # for robot_ID in range(start_ID,end_ID+1):
+    #     spawn_y = robot_ID - 20 
+    #     robot_name = f"wall_UPPER_{robot_ID}"
+    #     robots[robot_name] = Robot(
+    #         radius=20,
+    #         shape="circle",
+    #         dimensions=[50],
+    #         max_speed=0,
+    #         spawn_location=(SCREEN_WIDTH / 2, spawn_y),
+    #         goal_location=(SCREEN_WIDTH / 2, spawn_y),
+    #         time_step=0,
+    #         initial_velocity=np.array([0, 0]),
+    #         id=robot_ID,
+    #         color=(0, 0, 0)
+    #     )
+    # # robots = list(robots)
+    # # robots.
+    
+    
+    
+    
+    
+    robots = []
+    # rgb_list = generate_rainbow_colors(num_robots)
+    center = (SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
+    spacing = 10
+    num_robots = int(260/10)
+    for i in range(0,num_robots):
+        upper_spawn = np.array([SCREEN_WIDTH/2,i])
+        lower_spawn = np.array([SCREEN_WIDTH/2,num_robots-i])
+    
+    for i in range(num_robots):
+        robot_name = "Robot{}".format(i+1)
+        # radius, max_speed, spawn_location, goal_location, time_step, initial_velocity, id, color
+        robot = Robot(
+            radius=20,
+            shape="circle",
+            dimensions=[50],
+            max_speed=ROBOT_MAX_VELOCITY,
+            spawn_location=upper_spawn,
+            goal_location=upper_spawn,
+            time_step=TIME_STEP,
+            initial_velocity=np.array([0, 0]),
+            id=robot_name,
+            color=(0,0,0)
+        )
+        robots.append(robot)
+        
+    for i in range(num_robots):
+        robot_name = "Robot{}".format(i+1)
+        # radius, max_speed, spawn_location, goal_location, time_step, initial_velocity, id, color
+        robot = Robot(
+            radius=20,
+            shape="circle",
+            dimensions=[50],
+            max_speed=ROBOT_MAX_VELOCITY,
+            spawn_location=lower_spawn,
+            goal_location=lower_spawn,
+            time_step=TIME_STEP,
+            initial_velocity=np.array([0, 0]),
+            id=robot_name,
+            color=(0,0,0)
+        )
+        robots.append(robot)
+    
+    
     
 
         
@@ -706,9 +782,22 @@ def main():
     robot10 = Robot(radius=10, shape="circle", dimensions=[10], max_speed=5, spawn_location=(25+50, 550), goal_location=(550-50, 50), time_step=TIME_STEP,
                    initial_velocity=np.array([0, 0]), id=1, color=(255,0,125))
 
+    robots.append(robot1)
+    robots.append(robot2)
+    robots.append(robot3)
+    robots.append(robot4)
+    robots.append(robot5)
+                              
+    robots.append(robot6)
+    robots.append(robot7)
+    robots.append(robot8)
+    robots.append(robot9)
+    robots.append(robot10)
+    
+    
     
     # robots = [robot1,robot2,robot3,robot4,robot5,wall_LOWER_3,wall_LOWER_4,wall_LOWER_5,wall_UPPER_1,wall_UPPER_2,wall_UPPER_3]
-    robots = [robot1,robot2,robot3,robot4,robot5,robot6,robot7,robot8,robot9,robot10,wall_LOWER_3,wall_LOWER_4,wall_LOWER_5,wall_UPPER_1,wall_UPPER_2,wall_UPPER_3]
+    # robots = [robot1,robot2,robot3,robot4,robot5,robot6,robot7,robot8,robot9,robot10,wall_LOWER_3,wall_LOWER_4,wall_LOWER_5,wall_UPPER_1,wall_UPPER_2,wall_UPPER_3]
     
     # --------------- END: MANUALLY CREATING OBSTACLES AND ROBOTS - ATTEMPT: 3 ----------------------
     # ------------------------------------------------------------------------------------------
