@@ -1,4 +1,6 @@
 import pygame
+import os
+import pandas as pd
 import numpy as np
 import colorsys #HSV to RGB
 import time
@@ -9,6 +11,7 @@ from typing import List
 
 # Constants
 WHITE = (255, 255, 255)
+BLACK = (0,0,0)
 TRAIL_COLOR = (255, 0, 255)
 SCREEN_WIDTH = 600
 SCREEN_HEIGHT = 600
@@ -17,7 +20,7 @@ FPS = 120 # Game FPS, not real-time FPS
 # Variables to experiment with [VELOCITY_COUNT, NEIGHBOUR_DIST, ROBOT_COUNT] [36,200,4] [24,200,8] [12,400,16] [28,200,8] [12,200,24], [16,150,28]
 END_SIMULATION = False
 VELOCITY_COUNT = 36
-NEIGHBOUR_DIST = 300
+NEIGHBOUR_DIST = 100
 ROBOT_COUNT = 6
 IS_VO = False
 TIME_STEP = 0.1
@@ -29,6 +32,83 @@ CIRCLE_SPAWN_RADIUS = 200
 
 # MOST RECENT FILE TO COMBINE OUR WORK
 
+class Wall:
+    def __init__(self,vertices):
+        self.vertices = vertices
+    
+    def draw(self, screen):
+        pygame.draw.polygon(screen, BLACK, self.vertices)
+
+
+def create_walls():
+    walls = []
+    # walls.append(Wall([(50,50),(50,60),(550,60),(550,50)]))
+    # walls.append(Wall([(50,550),(50,540),(550,540),(550,550)]))
+    # walls.append(Wall([(50,50),(60,50),(60,550),(50,550)]))
+    # walls.append(Wall([(550,50),(540,50),(540,550),(550,550)]))
+    # walls.append(Wall([(50,60),(250,275),(350,275),(550,60)]))
+    # walls.append(Wall([(50,540),(250,325),(350,325),(550,540)]))
+
+    # walls.append(Wall([(50,100),(50,110),(550,110),(550,100)]))
+    # walls.append(Wall([(50,450),(50,440),(550,440),(550,450)]))
+    # walls.append(Wall([(50,100),(60,100),(60,450),(50,450)]))
+    # walls.append(Wall([(550,100),(540,100),(540,450),(550,450)]))
+    # walls.append(Wall([(50,110),(250,275),(350,275),(550,110)]))
+    # walls.append(Wall([(50,440),(250,325),(350,325),(550,440)]))
+
+    walls.append(Wall([(50,100),(50,110),(550,110),(550,100)]))
+    walls.append(Wall([(50,450),(50,440),(550,440),(550,450)]))
+    walls.append(Wall([(50,100),(60,100),(60,450),(50,450)]))
+    walls.append(Wall([(550,100),(540,100),(540,450),(550,450)]))
+    walls.append(Wall([(50,110),(275,250),(325,250),(550,110)]))
+    walls.append(Wall([(50,440),(275,350),(325,350),(550,440)]))
+
+    # walls.append(Wall([(50,100),(50,110),(550,110),(550,100)]))
+    # walls.append(Wall([(50,450),(50,440),(550,440),(550,450)]))
+    # walls.append(Wall([(50,100),(60,100),(60,450),(50,450)]))
+    # walls.append(Wall([(550,100),(540,100),(540,450),(550,450)]))
+    # walls.append(Wall([(50,110),(290,285),(310,285),(550,110)]))
+    # walls.append(Wall([(50,440),(290,315),(310,315),(550,440)]))
+
+    return walls
+
+# class Wall:
+#     def __init__(self, x_pos, y_pos, length, width):
+#         self.x_pos = x_pos
+#         self.y_pos = y_pos
+#         self.length = length
+#         self.width = width
+#         self.rect = pygame.Rect(x_pos, y_pos, length, width)
+
+#     def draw(self, screen):
+#         pygame.draw.rect(screen, BLACK, self.rect)
+
+
+# def create_walls():
+#     walls = []
+#     walls.append(Wall(50,50,500,10))
+#     walls.append(Wall(50,540,500,10))
+#     walls.append(Wall(50,50,10,500))
+#     walls.append(Wall(540,50,10,500))
+#     # walls.append(Wall(285,50,30,200))
+#     # walls.append(Wall(285,350,30,200))
+#     return walls
+    
+
+def draw_walls(walls, screen):
+    for wall in walls:
+        wall.draw(screen)
+
+
+class Metrics:
+    def __init__(self, travel_distance, shortest_distance, travel_time, shortest_time, success):
+        self.travel_distance = travel_distance
+        self.shortest_distance = shortest_distance
+        self.shortest_time = shortest_time
+        self.travel_time = travel_time
+        self.success = success
+
+
 class Robot:
     def __init__(self, radius, max_speed, spawn_location, goal_location, time_step, initial_velocity, id, color):
         self.current_location = np.array(spawn_location, dtype=float)
@@ -37,6 +117,11 @@ class Robot:
         self.radius = radius
         self.max_speed = max_speed
         self.time_step = time_step
+        self.travel_distance = 0
+        self.travel_time = 0
+        self.success = 0
+        self.shortest_distance = np.linalg.norm(self.goal - self.current_location) - self.radius
+        self.shortest_time = self.shortest_distance / self.max_speed
         self.neighbours = []
         self.AV = []
         self.preferred_velocity()
@@ -45,18 +130,25 @@ class Robot:
         self.ID = id
         self.color = color
 
+    def get_performance_metrics(self):
+        return Metrics(self.travel_distance, self.shortest_distance, self.travel_time, self.shortest_time, self.success)
+
     def is_goal_reached(self):
         return np.linalg.norm(self.goal - self.current_location) < self.radius
 
     def update_current_location(self):
-        self.trail.append(self.current_location.copy())  # Store the current location in the trail
+        previous_location = self.current_location.copy()
+        self.trail.append(previous_location)  # Store the current location in the trail
         self.current_location += self.velocity * self.time_step
+        if not self.is_goal_reached():
+            self.travel_distance += np.linalg.norm(self.current_location - previous_location)
 
     def preferred_velocity(self):
         if not self.is_goal_reached():
             direction = self.goal - self.current_location
             direction_unit_vector = direction / np.linalg.norm(direction)
             self.pref_vel = self.max_speed * direction_unit_vector
+            self.travel_time += self.time_step
         else:
             self.pref_vel = np.zeros(2)
 
@@ -123,11 +215,21 @@ class Robot:
 
     def useable_velocities(self, combined_VO):
         self.AV = [vel for vel in self.velocities if tuple(vel) not in map(tuple, combined_VO)]
+        # self.AV.append((0.5,0))
+        # self.AV.append((0,0.5))
+        # self.AV.append((-0.5,0))
+        # self.AV.append((0,-0.5))
+        # self.AV.append((0.5,0.5))
+        # self.AV.append((-0.5,0.5))
+        # self.AV.append((-0.5,-0.5))
+        # self.AV.append((0.5,-0.5))
 
-    def choose_velocity(self, combined_RVO, VO=False):
+    def choose_velocity(self, combined_RVO, walls, VO=False):
         self.preferred_velocity()
         
         VO = IS_VO
+
+        optimal_vel = np.zeros(2)
         
         if (VO):
             optimal_vel = self.pref_vel #ADDED FOR VO
@@ -144,10 +246,11 @@ class Robot:
         else:
             min_closeness = float('inf')
             for vel in self.AV:
-                closeness = np.linalg.norm(self.pref_vel - vel)
-                if closeness < min_closeness:
-                    min_closeness = closeness
-                    optimal_vel = vel
+                if not self.check_wall_collision(vel, walls):
+                    closeness = np.linalg.norm(self.pref_vel - vel)
+                    if closeness < min_closeness:
+                        min_closeness = closeness
+                        optimal_vel = vel
 
         if (VO):
             self.velocity = optimal_vel # VO part 
@@ -167,8 +270,8 @@ class Robot:
         for vel in self.velocities:
             constraint_val = self.collision_cone_val(vel, robot2)
             if constraint_val < 0:
-                VO.append(vel)
-                RVO.append((vel + self.velocity) / 2)
+                    VO.append(vel)
+                    RVO.append((vel + self.velocity) / 2)
         return VO, RVO
 
     def compute_combined_RVO(self, neighbour_robots):
@@ -178,6 +281,60 @@ class Robot:
             combined_VO.extend(self.compute_VO_and_RVO(neighbour_robot)[0])
             combined_RVO.extend(self.compute_VO_and_RVO(neighbour_robot)[1])
         return combined_VO, combined_RVO
+    
+    # def check_wall_collision(self, vel, walls):
+    #     x = self.current_location[0]
+    #     y = self.current_location[1]
+    #     vx = vel[0]
+    #     vy = vel[1]
+
+    #     new_x = x + vx*TIME_STEP
+    #     new_y = y + vy*TIME_STEP
+
+    #     collision = False
+
+    #     for wall in walls:
+    #         if (new_x >= wall.x_pos and new_x <= wall.x_pos + wall.length and
+    #             new_y >= wall.y_pos and new_y <= wall.y_pos + wall.width):
+    #             collision = True
+            
+    #     return collision
+
+    def check_wall_collision(self, vel, walls):
+        x = self.current_location[0]
+        y = self.current_location[1]
+        vx = vel[0]
+        vy = vel[1]
+
+        new_x = x + 5 + vx*TIME_STEP*2
+        new_y = y + 5 + vy*TIME_STEP*2
+
+        collision = False
+
+        for wall in walls:
+
+            polygon = wall.vertices
+            n= len(polygon)
+
+            inside = False
+
+            p1x, p1y = polygon[0]
+            for i in range(n + 1):
+                p2x, p2y = polygon[i % n]
+                if y > min(p1y, p2y):
+                    if y <= max(p1y, p2y):
+                        if x <= max(p1x, p2x):
+                            if p1y != p2y:
+                                xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                            if p1x == p2x or x <= xinters:
+                                inside = not inside
+                p1x, p1y = p2x, p2y
+
+            if (inside):
+                collision = True
+
+        return collision
+
 
     def collision_cone_val(self, vel, robot2):
         rx = self.current_location[0]
@@ -302,6 +459,9 @@ def create_robots(num_robots, radius):
     robots = []
     rgb_list = generate_rainbow_colors(num_robots)
     center = (SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
+
+    spawn_locations = [(100,200),(100,300),(100,400),(500,200),(500,300),(500,400)]
+    goal_locations = [(500,400),(500,300),(500,200),(100,400),(100,300),(100,200)]
     
     for i in range(num_robots):
         robot_name = "Robot{}".format(i+1)
@@ -309,8 +469,10 @@ def create_robots(num_robots, radius):
         robot = Robot(
             radius=ROBOT_RADIUS,
             max_speed=ROBOT_MAX_VELOCITY,
-            spawn_location=create_circular_locations(num_robots, radius, center)[0][i],
-            goal_location=create_circular_locations(num_robots, radius, center)[1][i],
+            spawn_location = spawn_locations[i],
+            goal_location = goal_locations[i],
+            # spawn_location=create_circular_locations(num_robots, radius, center)[0][i],
+            # goal_location=create_circular_locations(num_robots, radius, center)[1][i],
             time_step=TIME_STEP,
             initial_velocity=np.array([0, 0]),
             id=robot_name,
@@ -355,6 +517,7 @@ def main():
     num_robots = ROBOT_COUNT          # number of robots
     spawn_radius = CIRCLE_SPAWN_RADIUS      # radius of spawning circle #was 200 with screen (600,600)
     robots = create_robots(num_robots, spawn_radius)
+    walls = create_walls()
 
     # Compute velocities list for all robots
     velocities = velocities_list()
@@ -397,13 +560,14 @@ def main():
         i = 0
         for robot in robots:
             robot.useable_velocities(combined_vos[i])
-            robot.choose_velocity(combined_rvos[i])
+            robot.choose_velocity(combined_rvos[i], walls)
             robot.update_current_location()
             i += 1
 
         # Draw on the screen
         screen.fill(WHITE)
         draw_robots(robots, screen)
+        draw_walls(walls, screen)
         elapsed_time = update_time_counter(screen, start_time)
         
         
@@ -417,5 +581,50 @@ def main():
     pygame.display.quit()
     pygame.quit()
 
+    # Create a directory for the dataset
+    absolute_path = os.path.dirname(__file__)
+    output_folder = os.path.join(absolute_path, "../Simulation Results")
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    # Get performance metrics from all robots
+    robot_id_list = []
+    travel_distance_list = []
+    shortest_distance_list = []
+    travel_time_list = []
+    shortest_time_list = []
+    success_list = []
+    i = 0
+    for robot in robots:
+        metrics = robot.get_performance_metrics()
+        robot_id_list.append("robot" + str(i))
+        travel_distance_list.append(metrics.travel_distance)
+        shortest_distance_list.append(metrics.shortest_distance)
+        travel_time_list.append(metrics.travel_time)
+        shortest_time_list.append(metrics.shortest_time)
+        success_list.append(metrics.success)
+        i += 1
+    robot_id_list.append("Average")
+    avg_travel_distance = sum(travel_distance_list) / len(travel_distance_list)
+    travel_distance_list.append(avg_travel_distance)
+    avg_shortest_distance = sum(shortest_distance_list) / len(shortest_distance_list)
+    shortest_distance_list.append(avg_shortest_distance)
+    avg_travel_time = sum(travel_time_list) / len(travel_time_list)
+    travel_time_list.append(avg_travel_time)
+    avg_shortest_time = sum(shortest_time_list) / len(shortest_time_list)
+    shortest_time_list.append(avg_shortest_time)
+    success_fraction = sum(success_list) / len(success_list)
+    success_list.append(success_fraction)
+
+    # Save to CSV
+    df = pd.DataFrame()
+    df.insert(0, "Success", success_list)
+    df.insert(0, "Shortest Time", travel_time_list)
+    df.insert(0, "Travel Time", travel_time_list)
+    df.insert(0, "Shortest Distance", shortest_distance_list)
+    df.insert(0, "Travel Distance", travel_distance_list)
+    df.insert(0, "Robot ID", robot_id_list)
+    data_file_path = os.path.join(output_folder, "data.csv")
+    df.to_csv(data_file_path, index=False)
 
 main()
